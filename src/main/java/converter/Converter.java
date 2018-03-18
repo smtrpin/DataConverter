@@ -25,13 +25,17 @@ public class Converter {
     this.args = args.clone();
   }
 
-  public void convert() throws AbstractParserException, AbstractValidatorException, IOException, AbstractGeneratorException, AbstractWriterException {
-    isCorrectArgumentCount();
-    parseArguments();
-    validateInputArguments();
-    validateOutputArguments();
-    parseInputData();
-    generate();
+  public void convert() throws DataConverterException {
+    try {
+      isCorrectArgumentCount();
+      parseArguments();
+      validateInputArguments();
+      validateOutputArguments();
+      parseInputData();
+      generate();
+    } catch (IOException e) {
+      throw new DataConverterException(e);
+    }
   }
 
   private void isCorrectArgumentCount() throws AbstractParserException {
