@@ -1,7 +1,7 @@
 package converter.exception;
 
-public class AbstractGeneratorException extends Exception {
-  public AbstractGeneratorException(String message) {
+public class AbstractGeneratorException extends DataConverterException {
+  AbstractGeneratorException(String message) {
     super(message);
   }
 }
