@@ -10,12 +10,12 @@
 ### Поддерживаемые форматы входящих данных:
 
 ```sh
-Input:"<file1>;<file2>..." Output:"<output1>" Mode:"html"
+Input:"<file1>;<file2>..." Output:"<output1>"
 ```
 ### Пример использования:
 
 ```sh
-java -jar converter.jar Input:"/path/to/file/input1.properties;/path/to/file/input2.json" Output:"/path/to/input" Mode:"html"
+java -jar converter.jar Input:"/path/to/file/input1.properties;/path/to/file/input2.json" Output:"/path/to/input"
 ```
 
 ### Поддерживаемые теги:
@@ -84,6 +84,5 @@ codeExample="https://github.com/twocookie/DataConverter/","https://example.com/c
 ```
 
 ### Нюансы:
-  - Каждому output соответствует один режим генерации
+  - Один входной файл соответствует одному сгенерированному файлу
   - Значения в исходном файле формата *.properties должны быть разграничены *","* без пробелов
-  - Значения в исходном файле формата *.json должны распологаться в одну строчку. 
