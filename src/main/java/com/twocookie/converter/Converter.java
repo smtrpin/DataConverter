@@ -14,6 +14,7 @@ import com.twocookie.converter.validator.argument.ArgumentValidator;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.concurrent.*;
 
 public class Converter {
 
@@ -24,7 +25,7 @@ public class Converter {
     this.args = args.clone();
   }
 
-  public String convert() throws DataConverterException, IOException {
+  public HashSet<HTMLGenerator> convert() throws DataConverterException, IOException, ExecutionException, InterruptedException {
     isCorrectArgument();
     parseArguments();
     validateInput();
@@ -32,7 +33,7 @@ public class Converter {
     HashSet<PersonalData> personalData = parseData();
     HashSet<HTMLGenerator> pages = htmlGenerate(personalData);
     write(pages);
-    return "Complete";
+    return pages;
   }
 
   private void isCorrectArgument() throws ArgumentException {
@@ -46,23 +47,45 @@ public class Converter {
     this.argumentStorage = argumentParser.parse();
   }
 
-  private void validateInput() throws ArgumentException, ValidatorException, IOException {
+  private void validateInput() {
     HashSet<AbstractResource> abstractResourceHashSet = (HashSet<AbstractResource>) argumentStorage.getInputStorage().getInput();
+    ExecutorService executorService = Executors.newCachedThreadPool();
     for (AbstractResource abstractResource : abstractResourceHashSet) {
-      Validator accessValidator = getAccessValidatorFactory(abstractResource);
-      accessValidator.validate();
+      executorService.submit(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            Validator accessValidator = getAccessValidatorFactory(abstractResource);
+            accessValidator.validate();
 
-      Validator syntacticValidator = getSyntacticValidatorFactory(abstractResource);
-      syntacticValidator.validate();
+            Validator syntacticValidator = getSyntacticValidatorFactory(abstractResource);
+            syntacticValidator.validate();
+          } catch (ArgumentException | ValidatorException | IOException e) {
+            System.out.println(e.getMessage());
+          }
+        }
+      });
     }
+    executorService.shutdown();
   }
 
-  private void validateOutput() throws ArgumentException, IOException, ValidatorException {
+  private void validateOutput() {
     HashSet<AbstractResource> abstractResourceHashSet = (HashSet<AbstractResource>) argumentStorage.getOutputStorage().getOutput();
+    ExecutorService executorService = Executors.newCachedThreadPool();
     for (AbstractResource abstractResource : abstractResourceHashSet) {
-      Validator accessValidator = getAccessValidatorFactory(abstractResource);
-      accessValidator.validate();
+      executorService.submit(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            Validator accessValidator = getAccessValidatorFactory(abstractResource);
+            accessValidator.validate();
+          } catch (ArgumentException | IOException | ValidatorException e) {
+            System.out.println(e.getMessage());
+          }
+        }
+      });
     }
+    executorService.shutdown();
   }
 
   private Validator getAccessValidatorFactory(AbstractResource abstractResource) throws ArgumentException {
@@ -75,14 +98,23 @@ public class Converter {
     return syntacticValidatorFactory.create();
   }
 
-  private HashSet<PersonalData> parseData() throws ArgumentException, DAOException, IOException, ValidatorException {
+  private HashSet<PersonalData> parseData() throws ExecutionException, InterruptedException {
     HashSet<PersonalData> personalData = new HashSet<>();
     HashSet<AbstractResource> abstractResourceHashSet = (HashSet<AbstractResource>) argumentStorage.getInputStorage().getInput();
+    ExecutorService executorService = Executors.newCachedThreadPool();
     for (AbstractResource abstractResource : abstractResourceHashSet) {
-      DAOFactory daoFactory = new DAOFactory(abstractResource);
-      PersonalInfoDAO personalInfoDAO = daoFactory.create();
-      personalData.add(personalInfoDAO.getPersonalData());
+      Future<PersonalData> personalDataFuture = executorService.submit(new Callable<PersonalData>() {
+        @Override
+        public PersonalData call() throws Exception {
+          DAOFactory daoFactory = new DAOFactory(abstractResource);
+          PersonalInfoDAO personalInfoDAO = daoFactory.create();
+          return personalInfoDAO.getPersonalData();
+        }
+      });
+
+      personalData.add(personalDataFuture.get());
     }
+    executorService.shutdown();
     return personalData;
   }
 
