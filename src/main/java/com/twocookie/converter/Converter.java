@@ -12,6 +12,7 @@ import com.twocookie.converter.resources.AbstractResource;
 import com.twocookie.converter.storage.ArgumentStorage;
 import com.twocookie.converter.validator.argument.ArgumentValidator;
 
+import javax.swing.text.html.HTML;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.concurrent.*;
@@ -118,12 +119,20 @@ public class Converter {
     return personalData;
   }
 
-  private HashSet<HTMLGenerator> htmlGenerate(HashSet<PersonalData> personalData) throws IOException, GeneratorException {
+  private HashSet<HTMLGenerator> htmlGenerate(HashSet<PersonalData> personalData) throws IOException, GeneratorException, ExecutionException, InterruptedException {
     HashSet<HTMLGenerator> htmlGenerators = new HashSet<>();
+    ExecutorService executorService = Executors.newCachedThreadPool();
     for (PersonalData data : personalData) {
-      HTMLGenerator htmlGenerator = new HTMLGenerator(data);
-      htmlGenerator.generate();
-      htmlGenerators.add(htmlGenerator);
+      Future<HTMLGenerator> htmlGenerator = executorService.submit(new Callable<HTMLGenerator>() {
+        @Override
+        public HTMLGenerator call() throws Exception {
+          HTMLGenerator htmlGenerator = new HTMLGenerator(data);
+          htmlGenerator.generate();
+          return htmlGenerator;
+        }
+      });
+
+      htmlGenerators.add(htmlGenerator.get());
     }
     return htmlGenerators;
   }
